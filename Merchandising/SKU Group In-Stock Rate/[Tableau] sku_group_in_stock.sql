@@ -17,11 +17,26 @@ FROM
 GROUP BY 1, 2, 3, 4, 5
 ORDER BY 1, 2, 3, 4, 5)
 
-, sku_group_frame AS (
-    SELECT product_id, sgm.group AS group_id, sgm.tier
+, sku_group_seasonality AS (
+    SELECT sgm.group AS group_id
+        , MAX(CASE WHEN season_start_week_num IS NULL OR season_end_week_num IS NULL THEN 0
+            WHEN season_start_week_num = 1 AND season_end_week_num = 52 THEN 0
+            ELSE 1
+        END) AS seasonality_flag
     FROM sandbox.sku_group_mapping AS sgm
-    GROUP BY 1,2,3
-    ORDER BY 1,2,3
+    GROUP BY 1
+    ORDER BY 1
+)
+
+, sku_group_frame AS (
+    SELECT gi.product_id, g.group_id ,g.ethnicity, g.tier, sgs.seasonality_flag
+    FROM weee_p01.pi_product_group AS g
+        JOIN weee_p01.pi_product_group_item AS gi
+            ON gi.group_id = g.group_id
+        LEFT JOIN sku_group_seasonality AS sgs
+            ON sgs.group_id = g.group_id
+    GROUP BY 1,2,3,4,5
+    ORDER BY 1,2,3,4,5
 )
 
 , time_frame AS (
@@ -41,6 +56,8 @@ SELECT
     , sf.product_id
     , sf.group_id
     , sf.tier
+    , sf.ethnicity
+    , sf.seasonality_flag
 FROM
     weee_p01.gb_sales_org           AS so1
         -- price region
@@ -51,8 +68,8 @@ FROM
          ON so2.id = som.ref_sales_org_id
     JOIN time_frame                 AS tf ON TRUE
     JOIN sku_group_frame                  AS sf ON TRUE
-GROUP BY 1, 2, 3, 4, 5, 6, 7
-ORDER BY 1, 2, 3, 4, 5, 6, 7)
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
+ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9)
 , availability AS (
     SELECT
         lh.day  AS delivery_day
@@ -78,4 +95,4 @@ FROM final_frame AS f
     ON a.product_id = f.product_id
         AND a.delivery_day = f.delivery_day
         AND a.sales_org_id = f.sales_org_id
-ORDER BY 1,2,3,4,5,6,7,8,9,10,11,12
+ORDER BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
