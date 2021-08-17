@@ -15,17 +15,7 @@ FROM
          ON pc.num = c.parent_num
          AND pc.num NOT IN (18,50,51,99)
 GROUP BY 1, 2, 3, 4, 5
-ORDER BY 1, 2, 3, 4, 5)
-
-, sku_group_seasonality AS (
-    SELECT sgm.group AS group_id
-        , MAX(CASE WHEN season_start_week_num IS NULL OR season_end_week_num IS NULL THEN 0
-            WHEN season_start_week_num = 1 AND season_end_week_num = 52 THEN 0
-            ELSE 1
-        END) AS seasonality_flag
-    FROM sandbox.sku_group_mapping AS sgm
-    GROUP BY 1
-    ORDER BY 1
+ORDER BY 1, 2, 3, 4, 5
 )
 
 , sku_group_frame AS (
