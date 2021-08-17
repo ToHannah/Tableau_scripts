@@ -38,6 +38,7 @@ ORDER BY 1, 2, 3, 4, 5)
             ON gi.group_id = g.group_id
         LEFT JOIN weee_p01.pi_product_season AS ps
             ON ps.product_id = gi.product_id
+            AND ps.status <> 'X'
     WHERE g.group_id NOT IN (7,27,501,521,702,707,713,1902,1905,1907,1907,1916,1925,1939,1939,1950,1964,2409,2426,4804,4807,1437,2928,1457
                       ,929,930,300084,1437,200135,200141,2928,1457,300095)
     ORDER BY 1,2,3,4
