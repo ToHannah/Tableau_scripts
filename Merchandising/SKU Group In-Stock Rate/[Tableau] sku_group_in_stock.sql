@@ -29,16 +29,18 @@ ORDER BY 1, 2, 3, 4, 5)
 )
 
 , sku_group_frame AS (
-    SELECT gi.product_id, g.group_id ,g.ethnicity, g.tier, sgs.seasonality_flag
+    SELECT DISTINCT
+        gi.product_id, g.group_id ,g.ethnicity, g.tier
+        , CASE WHEN ps.product_id IS NOT NULL THEN 1 ELSE 0 END AS seasonality_flag_sku
+        , MAX(seasonality_flag_sku) OVER (PARTITION BY g.group_id) AS seasonality_flag
     FROM weee_p01.pi_product_group AS g
         JOIN weee_p01.pi_product_group_item AS gi
             ON gi.group_id = g.group_id
-        LEFT JOIN sku_group_seasonality AS sgs
-            ON sgs.group_id = g.group_id
+        LEFT JOIN weee_p01.pi_product_season AS ps
+            ON ps.product_id = gi.product_id
     WHERE g.group_id NOT IN (7,27,501,521,702,707,713,1902,1905,1907,1907,1916,1925,1939,1939,1950,1964,2409,2426,4804,4807,1437,2928,1457
                       ,929,930,300084,1437,200135,200141,2928,1457,300095)
-    GROUP BY 1,2,3,4,5
-    ORDER BY 1,2,3,4,5
+    ORDER BY 1,2,3,4
 )
 
 , time_frame AS (
@@ -60,6 +62,7 @@ SELECT
     , sf.tier
     , sf.ethnicity
     , sf.seasonality_flag
+    , sf.seasonality_flag_sku
 FROM
     weee_p01.gb_sales_org           AS so1
         -- price region
@@ -70,8 +73,8 @@ FROM
          ON so2.id = som.ref_sales_org_id
     JOIN time_frame                 AS tf ON TRUE
     JOIN sku_group_frame                  AS sf ON TRUE
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
-ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9)
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 , availability AS (
     SELECT
         lh.day  AS delivery_day
@@ -97,4 +100,4 @@ FROM final_frame AS f
     ON a.product_id = f.product_id
         AND a.delivery_day = f.delivery_day
         AND a.sales_org_id = f.sales_org_id
-ORDER BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
+ORDER BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
