@@ -27,7 +27,6 @@ SELECT DISTINCT
     , g.ethnicity
     , p.id                         AS product_id
     , p.short_title_en || ' - '||p.title AS product_title
-    , CASE WHEN ps.product_id IS NOT NULL THEN 1 ELSE 0 END seasonality_flag_sku
 FROM
     weee_p01.gb_product        AS p
         -- taxonomy info
@@ -40,9 +39,6 @@ FROM
         ON gi.product_id = p.id
     JOIN weee_p01.pi_product_group AS g
         ON g.group_id = gi.group_id
-    LEFT JOIN weee_p01.pi_product_season AS ps
-        ON ps.product_id = p.id
-        AND ps.status <> 'X'
 WHERE gi.group_id NOT IN (SELECT group_id FROM dnr_exclude)
 ORDER BY 1, 2, 3, 4, 5, 6, 7, 8
 )
@@ -72,7 +68,11 @@ SELECT
     , sf.group_id
     , sf.tier
     , sf.ethnicity
-    , sf.seasonality_flag_sku
+    , CASE
+        WHEN ps.product_id IS NULL THEN 1
+        WHEN date_part(w, tf.delivery_day)+1 between ps.start_week and ps.end_week then 1
+        ELSE 0
+      END AS seasonality_flag_sku
     , sf.product_id
     , sf.product_title
     , sf.storage_type
@@ -86,6 +86,9 @@ FROM
          ON so2.id = som.ref_sales_org_id
     JOIN time_frame                 AS tf ON TRUE
     JOIN sku_frame                  AS sf ON TRUE
+    LEFT JOIN weee_p01.pi_product_season AS ps
+        ON ps.product_id = sf.product_id
+        AND ps.status <> 'X'
 GROUP BY 1, 2, 3, 4, 5, 6, 7 ,8, 9, 10, 11, 12, 13, 14
 ORDER BY 1, 2, 3, 4, 5, 6, 7 ,8, 9, 10, 11, 12, 13, 14)
 , availability AS (
